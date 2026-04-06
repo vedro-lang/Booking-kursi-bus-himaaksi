@@ -42,7 +42,6 @@ body { font-family: Arial; text-align: center; }
 
 <script>
 
-// 🔥 GANTI INI DENGAN PUNYA KAMU
 const supabaseUrl = 'https://fhzwkfkcvqkwfamqujyz.supabase.co'
 const supabaseKey = 'sb_publishable_A0koj6Yn3urcSml4ln46cw_390GRjn0'
 
@@ -68,7 +67,7 @@ for (let i = 0; i < 13; i++) {
 async function initSeats() {
   const { data } = await supabase.from('kursi').select('*');
 
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     let insertData = [];
     for (let i = 1; i <= 64; i++) {
       insertData.push({ nomor: i, nama: null });
@@ -110,13 +109,6 @@ async function loadSeats() {
             .eq('nomor', num);
 
           loadSeats();
-        }
-      };
-    }
-
-    bus.appendChild(div);
-  });
-}
         }
       };
     }
