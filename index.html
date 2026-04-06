@@ -1,129 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Booking Kursi Bus HIMAAKSI</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <title>Booking Kursi Bus</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-<style>
-body { font-family: Arial; text-align: center; }
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+    }
 
-.bus {
-  display: grid;
-  grid-template-columns: repeat(6, 60px);
-  gap: 10px;
-  justify-content: center;
-}
+    .bus {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
 
-.seat {
-  width: 60px;
-  height: 60px;
-  background-color: red;
-  color: white;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
+    .seat {
+      padding: 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+      font-size: 12px;
+    }
 
-.booked {
-  background-color: green;
-  cursor: not-allowed;
-}
+    .empty {
+      background-color: green;
+    }
 
-.aisle { background: transparent; }
-</style>
+    .booked {
+      background-color: red;
+    }
+
+    .aisle {
+      visibility: hidden;
+    }
+  </style>
 </head>
 
 <body>
 
-<h2>Booking Kursi Bus HIMAAKSI</h2>
+<h2>Booking Kursi Bus (65 Seat)</h2>
+
 <div class="bus" id="bus"></div>
 
 <script>
+  const supabase = supabase.createClient(
+    "https://fyzjtzugecuotmdwvbcv.supabase.co",
+    "sb_publishable_Wb8K6g9mWJ1OaX_u_IWtxA_xqNf6gCf"
+  );
 
-const supabaseUrl = 'https://fhzwkfkcvqkwfamqujyz.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoendrZmtjdnFrd2ZhbXF1anl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0ODQwNjQsImV4cCI6MjA5MTA2MDA2NH0.2IuL1o1jiNKGokDHMPsEcMpo5M1QvcEvuxzQ0fUBmmI'
+  const bus = document.getElementById("bus");
 
-const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+  function renderSeats(data) {
+    bus.innerHTML = "";
 
-let bus = document.getElementById("bus");
+    let count = 0;
 
-// layout kursi
-let seats = [];
-let nomor = 1;
+    for (let i = 0; i < 13; i++) { // 13 baris (5 kursi per baris)
+      for (let j = 0; j < 5; j++) {
 
-for (let i = 0; i < 13; i++) {
-  for (let j = 0; j < 2; j++) {
-    if (nomor <= 64) seats.push(nomor++);
-  }
-  seats.push(null);
-  for (let j = 0; j < 3; j++) {
-    if (nomor <= 64) seats.push(nomor++);
-  }
-}
-
-// AUTO BUAT DATA
-async function initSeats() {
-  const { data } = await supabase.from('kursi').select('*');
-
-  if (!data || data.length === 0) {
-    let insertData = [];
-    for (let i = 1; i <= 64; i++) {
-      insertData.push({ nomor: i, nama: null });
-    }
-
-    await supabase.from('kursi').insert(insertData);
-  }
-}
-
-// LOAD DATA
-async function loadSeats() {
-  const { data } = await supabase.from('kursi').select('*');
-
-  bus.innerHTML = "";
-
-  seats.forEach(num => {
-    let div = document.createElement("div");
-
-    if (num === null) {
-      div.classList.add("aisle");
-    } else {
-      let seatData = data ? data.find(d => d.nomor == num) : null;
-
-      div.classList.add("seat");
-      div.innerText = num;
-
-      if (seatData && seatData.nama) {
-        div.classList.add("booked");
-      }
-
-      div.onclick = async function () {
-        if (seatData && seatData.nama) return;
-
-        let nama = prompt("Masukkan nama:");
-        if (nama) {
-          await supabase
-            .from('kursi')
-            .update({ nama: nama })
-            .eq('nomor', num);
-
-          loadSeats();
+        // buat lorong di tengah (2 kiri - 3 kanan)
+        if (j === 2) {
+          let aisle = document.createElement("div");
+          aisle.className = "aisle";
+          bus.appendChild(aisle);
+          continue;
         }
-      };
+
+        const seatData = data[count];
+        const div = document.createElement("div");
+
+        div.className = "seat " + (seatData.booked ? "booked" : "empty");
+
+        div.innerHTML = seatData.booked
+          ? `${seatData.id}<br>${seatData.name}`
+          : seatData.id;
+
+        div.onclick = async () => {
+          if (seatData.booked) return;
+
+          const name = prompt("Masukkan nama:");
+          if (!name) return;
+
+          await supabase
+            .from("seats")
+            .update({ booked: true, name: name })
+            .eq("id", seatData.id);
+        };
+
+        bus.appendChild(div);
+        count++;
+      }
     }
+  }
 
-    bus.appendChild(div);
-  });
-}
+  async function loadSeats() {
+    const { data } = await supabase.from("seats").select("*").order("id");
+    renderSeats(data);
+  }
 
-// START
-async function start() {
-  await initSeats();
   loadSeats();
-}
 
-start();
+  // REALTIME UPDATE 
+  supabase
+    .channel("realtime seats")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "seats" },
+      () => {
+        loadSeats();
+      }
+    )
+    .subscribe();
 
 </script>
 
