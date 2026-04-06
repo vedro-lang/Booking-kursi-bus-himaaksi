@@ -90,7 +90,7 @@ async function loadSeats() {
     if (num === null) {
       div.classList.add("aisle");
     } else {
-      let seatData = data.find(d => d.nomor == num);
+      let seatData = data ? data.find(d => d.nomor == num) : null;
 
       div.classList.add("seat");
       div.innerText = num;
@@ -110,6 +110,13 @@ async function loadSeats() {
             .eq('nomor', num);
 
           loadSeats();
+        }
+      };
+    }
+
+    bus.appendChild(div);
+  });
+}
         }
       };
     }
